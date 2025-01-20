@@ -1,0 +1,28 @@
+pnr,name,age,seat_number,waiting_list,train_name,status,date
+123456,John Doe,29,12A,5,Express 101,Confirmed,2025-01-20
+234567,Alice Smith,35,15B,0,Superfast 202,Waiting List,2025-01-21
+345678,Bob Johnson,42,4C,2,Express 101,Confirmed,2025-01-22
+456789,Clara Davis,23,8D,1,Superfast 202,Waiting List,2025-01-23
+567890,David Lee,30,10A,0,Express 101,Confirmed,2025-01-24
+678901,Emma Wilson,28,20B,3,Express 303,Confirmed,2025-01-25
+789012,George Taylor,54,5C,4,Superfast 505,Waiting List,2025-01-26
+890123,Harriet Martin,32,16D,0,Express 404,Confirmed,2025-01-27
+901234,Isaac Brown,60,7A,0,Superfast 303,Confirmed,2025-01-28
+102345,Jackie Miller,45,19B,6,Express 505,Waiting List,2025-01-29
+203456,Luke Wilson,37,3C,0,Superfast 101,Confirmed,2025-01-30
+304567,Mary Thomas,50,12B,2,Express 202,Confirmed,2025-02-01
+405678,Nick Garcia,25,9A,1,Superfast 404,Waiting List,2025-02-02
+506789,Olivia Martinez,33,18C,0,Express 303,Confirmed,2025-02-03
+607890,Peter Lee,40,2B,0,Superfast 505,Confirmed,2025-02-04
+708901,Ravi Kumar,27,11A,4,Shatabdi Express,Waiting List,2025-02-05
+809012,Sneha Patel,33,13C,0,Duronto Express,Confirmed,2025-02-06
+910123,Aman Singh,21,14D,0,Rajdhani Express,Confirmed,2025-02-07
+101234,Deepika Verma,38,2B,2,Sampark Kranti,Confirmed,2025-02-08
+112345,Vikram Yadav,41,6A,0,Vaigai Express,Confirmed,2025-02-09
+123456,Geeta Sharma,29,15A,1,Shatabdi Express,Waiting List,2025-02-10
+134567,Ajay Saini,36,9B,3,Shri Ganga Express,Confirmed,2025-02-11
+145678,Rashmi Rao,34,4A,0,Malwa Express,Confirmed,2025-02-12
+156789,Priyanka Mehta,28,10C,0,Narmada Express,Confirmed,2025-02-13
+167890,Manoj Gupta,48,7D,5,Deccan Queen,Waiting List,2025-02-14
+178901,Neha Joshi,41,18B,0,Mumbai Rajdhani,Confirmed,2025-02-15
+189012,Kunal Agarwal,30,5A,0,Shatabdi Express,Confirmed,2025-02-16
