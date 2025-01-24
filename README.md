@@ -21,8 +21,9 @@ An interactive virtual call center application for Indian Railways using Streaml
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
-   cd railway-call-center
+   git clone https://github.com/winter000boy/AI-Powered-Call-Center.git
+   cd AI-Powered-Call-Center
+
 
 
 2. Create and activate virtual environment:
@@ -51,38 +52,40 @@ An interactive virtual call center application for Indian Railways using Streaml
 
 
 2. Use the interface:
-      <ol>
+      <ul>
             <li>Click "Start Call" to begin interaction</li>
             <li>Use the "Speak" button for voice input</li>
             <li>Click "End Call" to finish the session</li>
-      </ol>
+      </ul>
 
-Train Information
+3. Train Information
 The system includes information for:
-
-Rajdhani Express (12345)
-Shatabdi Express (67890)
-
-
-FAQ Topics
-Ticket Cancellation
-Luggage Allowance
+   <ul>
+   <li>Rajdhani Express (12345)</li>
+   <li>Shatabdi Express (67890)</li>
+   </ul>
 
 
-Emergency Contacts
-Railway Emergency: 139
-Customer Care: 1800-111-139
 
 
-Technical Details:
+4. FAQ Topics
+<ul>
+<li>Ticket Cancellation</li>
+<li>Luggage Allowance</li>
+</ul>
 
-Built with Streamlit for web interface
-Uses Google Gemini 1.5 Pro for AI responses
-Implements pyttsx3 for text-to-speech
-Uses speech_recognition for voice input
-Maintains conversation history in session state
-Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
-#### MIT License
+
+
+5. Technical Details:
+
+<ul>
+    <li>Built with Streamlit for web interface</li>
+    <li>Uses Google Gemini 1.5 Pro for AI responses</li>
+    <li>Implements pyttsx3 for text-to-speech</li>
+    <li>Uses speech_recognition for voice input</li>
+    <li>Maintains conversation history in session state</li>
+</ul>
+
+<h2>Contributing</h2>
+<p>Contributions are welcome! Please feel free to submit a Pull Request.</p>
