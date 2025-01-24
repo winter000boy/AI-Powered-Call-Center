@@ -1,18 +1,37 @@
-# Ignore environment variable files
+# Environment variables
 .env
 
-# Ignore Python bytecode files
-*.pyc
+
+# Python
+*.py[cod]
 __pycache__/
+*.so
+.Python
 
-# Ignore virtual environment directories
+
+# Virtual Environment
 .venv/
+venv/
 
 
-# Ignore SQLite database files
+# IDE specific files
+.idea/
+.vscode/
+
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Database
 *.db
+*.sqlite3
 
-# Ignore other common files
-*.log
-*.bak
-*.swp
+
+
+
+# Streamlit
+.streamlit/
+
+# Distribution/packaging
+.Python
