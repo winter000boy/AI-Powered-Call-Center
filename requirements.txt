@@ -1,6 +1,0 @@
-langchain
-streamlit
-sqlalchemy
-openai
-pandas
-python-dotenv

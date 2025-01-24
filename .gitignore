@@ -6,8 +6,8 @@
 __pycache__/
 
 # Ignore virtual environment directories
-venv/
-ai/
+.venv/
+
 
 # Ignore SQLite database files
 *.db

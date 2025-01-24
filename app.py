@@ -1,123 +1,209 @@
 import os
-import pyttsx3
-import speech_recognition as sr
 from dotenv import load_dotenv
-import pandas as pd
+import google.generativeai as genai
 import streamlit as st
-import requests
+from streamlit_chat import message
+import speech_recognition as sr
+import pyttsx3
 import json
-from langchain.agents import initialize_agent, Tool
-from langchain.chat_models import ChatOpenAI
-from langchain_core.language_models import BaseLLM
+
+# Railway Database
+RAILWAY_DATA = {
+    "train_schedules": {
+        "12345": {
+            "train_name": "Rajdhani Express",
+            "departure_time": "10:00 AM",
+            "arrival_time": "8:00 PM",
+            "days_of_operation": ["Monday", "Wednesday", "Friday"]
+        },
+        "67890": {
+            "train_name": "Shatabdi Express",
+            "departure_time": "6:00 AM",
+            "arrival_time": "2:00 PM",
+            "days_of_operation": ["Daily"]
+        }
+    },
+    "faqs": {
+        "ticket_cancellation": "Tickets can be cancelled up to 4 hours before the train's departure.",
+        "luggage_allowance": "Passengers are allowed to carry 40kg in sleeper class and 50kg in AC classes."
+    }
+}
+
+# Helper functions for train and FAQ information
+def get_train_info(train_number):
+    return RAILWAY_DATA["train_schedules"].get(train_number, None)
+
+def get_faq_info(topic):
+    return RAILWAY_DATA["faqs"].get(topic.lower(), None)
 
 # Load environment variables
 load_dotenv()
-gemini_api_key = os.getenv('GEMINI_API_KEY')  # Use your Gemini API key
-csv_file = "railway_data.csv"  # Path to your CSV file
-railway_data = pd.read_csv(csv_file)
 
-# Initialize pyttsx3 for text-to-speech
+# Configure Generative AI API
+api_key = os.getenv('GEMINI_API_KEY')
+if not api_key:
+    raise ValueError("GEMINI_API_KEY not found in .env file")
+
+genai.configure(api_key=api_key)
+
+# Initialize Generative AI model
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-pro",
+    generation_config={
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_output_tokens": 8192,
+    }
+)
+
+# Create system prompt
+SYSTEM_PROMPT = f"""
+You are Raj, a professional call center employee at Indian Railways.
+Use the following railway information to assist customers:
+
+Train Schedules:
+{json.dumps(RAILWAY_DATA['train_schedules'], indent=2)}
+
+FAQs:
+{json.dumps(RAILWAY_DATA['faqs'], indent=2)}
+
+When answering:
+1. If asked about train schedules, look up the train number in the database
+2. For general questions, check the FAQs first
+3. Always maintain a professional tone
+4. Start with: "Hello, this is Raj from Indian Railways."
+5. End with: "Is there anything else I can help you with?"
+"""
+
+chat_session = model.start_chat(history=[])
+chat_session.send_message(SYSTEM_PROMPT)
+
+# Initialize text-to-speech engine
 engine = pyttsx3.init()
-engine.setProperty('rate', 150)  # Speed of speech
-engine.setProperty('volume', 1)  # Volume level (0.0 to 1.0)
+engine.setProperty('rate', 150)
+engine.setProperty('volume', 1.0)
 
-# Function to convert text to speech
-def text_to_speech(text):
-    engine.say(text)
-    engine.runAndWait()
+def speak_text(text):
+    """Convert text to speech."""
+    try:
+        engine.say(text)
+        engine.runAndWait()
+    except Exception as e:
+        st.error(f"Error in text-to-speech: {str(e)}")
 
-# Function to listen to speech and convert to text
-def listen_to_audio():
+def recognize_speech():
+    """Convert speech to text."""
     recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("Listening for your query...")
-        text_to_speech("Hello Sir, I’m speaking from Indian Railways. How may I assist you?")
-        audio = recognizer.listen(source)
-        try:
-            query = recognizer.recognize_google(audio)
-            print(f"User Query: {query}")
-            return query
-        except sr.UnknownValueError:
-            print("Sorry, I couldn't understand that.")
-            return None
-        except sr.RequestError:
-            print("Sorry, I couldn't request results; check your internet connection.")
-            return None
+    try:
+        with sr.Microphone() as source:
+            st.info("Listening...")
+            audio = recognizer.listen(source, timeout=5)
+            return recognizer.recognize_google(audio)
+    except sr.RequestError:
+        st.error("Could not request results; check your internet connection")
+        return None
+    except sr.UnknownValueError:
+        st.warning("Could not understand audio")
+        return None
+    except Exception as e:
+        st.error(f"Error in speech recognition: {str(e)}")
+        return None
 
-# Function to query the Gemini API
-def query_gemini_api(query):
-    url = "https://generativelanguage.googleapis.com/v1beta2/models/gemini-1.5:generateText"
-    headers = {"Authorization": f"Bearer {gemini_api_key}", "Content-Type": "application/json"}
-    payload = {"prompt": {"text": query}}
-    
-    response = requests.post(url, headers=headers, json=payload)
-    if response.status_code == 200:
-        return response.json().get('candidates', [{}])[0].get('output', "No valid response from Gemini.")
-    else:
-        return "Sorry, I couldn't get a response from the Gemini API."
+def run_chat(user_input):
+    """Enhanced chat function with data lookup."""
+    try:
+        # Check if query contains train number
+        train_numbers = [num for num in RAILWAY_DATA["train_schedules"].keys() if num in user_input]
+        if train_numbers:
+            train_info = get_train_info(train_numbers[0])
+            context = f"Train Information: {json.dumps(train_info)}\n"
+            user_input = context + user_input
 
-# Function to query the database for PNR and train details
-def query_database(pnr_number):
-    result = railway_data[railway_data['PNR'] == int(pnr_number)]
-    if not result.empty:
-        train_name = result.iloc[0]['Train Name']
-        status = result.iloc[0]['Status']
-        return f"PNR {pnr_number} is for train '{train_name}'. Current status is: {status}."
-    else:
-        return f"No details found for PNR {pnr_number}."
+        # Check for FAQ keywords
+        for topic in RAILWAY_DATA["faqs"].keys():
+            if topic in user_input.lower():
+                faq_info = get_faq_info(topic)
+                context = f"FAQ Information: {faq_info}\n"
+                user_input = context + user_input
 
-# Initialize LangChain model and agent
-tools = [
-    Tool(name="Gemini API Query", func=query_gemini_api, description="Fetch information using Gemini AI."),
-    Tool(name="Database Query", func=query_database, description="Query railway database for PNR or train details.")
-]
-
-llm = ChatOpenAI(temperature=0)  # Replace with a Gemini-based implementation if necessary
-agent = initialize_agent(tools, llm, agent_type="zero-shot-react-description", verbose=True)
-
-# Function to handle queries with LangChain
-def handle_query(query):
-    response = agent.run(query)
-    return response
+        response = chat_session.send_message(user_input)
+        return response.text
+    except Exception as e:
+        st.error(f"Error in chat processing: {str(e)}")
+        return "I'm sorry, I couldn't process that request."
 
 # Streamlit UI
-st.set_page_config(page_title="AI Powered Call Center", layout="wide")
-st.title("AI Powered Call Center")
+st.title("🚂 Indian Railways Customer Service")
+st.subheader("24/7 Virtual Call Center")
 
-# Call Simulation: Start the call and process voice input
-if st.button("Start Call"):
-    st.write("**Agent Raj is now attending the call. Please speak your query.**")
-    with st.spinner("Agent Raj is listening..."):
-        query = listen_to_audio()  # Process voice input
-        if query:
-            st.write("User's Query:", query)
-            response = handle_query(query)  # Process query
-            st.write("Agent Raj's Response:", response)
+# Call status
+if 'call_active' not in st.session_state:
+    st.session_state.call_active = False
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
 
-            # Convert response to speech
-            text_to_speech(response)
-        else:
-            st.error("No query received or could not understand the query.")
+# Custom CSS for round buttons
+st.markdown(
+    """
+    <style>
+    .round-button {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: none;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    .call-button {
+        background-color: green;
+    }
+    .end-call-button {
+        background-color: red;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-# Text input for user query (optional)
-query = st.text_input("Enter your query (e.g., 'What is the status of my PNR 123456?')")
+# Call controls
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("📞 Start Call", key="start_call", disabled=st.session_state.call_active, 
+                 use_container_width=True):
+        st.session_state.call_active = True
+        welcome_msg = "Hello, this is Raj from Indian Railways. How may I assist you today?"
+        st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
+        speak_text(welcome_msg)
 
-# Button to submit query (text input)
-if st.button("Submit Query"):
-    if query:
-        with st.spinner("Processing..."):
-            response = handle_query(query)
-            st.success("Query processed successfully!")
-            st.write("Response Text:", response)
-            text_to_speech(response)
-    else:
-        st.error("Please enter a query.")
+with col2:
+    if st.button("🔚 End Call", key="end_call", disabled=not st.session_state.call_active, 
+                 use_container_width=True):
+        st.session_state.call_active = False
+        goodbye_msg = "Thank you for calling Indian Railways. Have a great day!"
+        st.session_state.messages.append({"role": "assistant", "content": goodbye_msg})
+        speak_text(goodbye_msg)
+        st.session_state.messages = []
 
-# Button to simulate the end of the call
-if st.button("End Call"):
-    st.write("Thank you for calling Indian Railways! Goodbye.")
-    st.balloons()
+# Show conversation interface only when call is active
+if st.session_state.call_active:
+    st.write("---")
+    st.write("📱 Call in progress...")
 
-# Footer with contact details
+    if st.button("🎤 Speak"):
+        user_input = recognize_speech()
+        if user_input:
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            with st.spinner("Processing..."):
+                response = run_chat(user_input)
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                speak_text(response)
+
+# Display conversation history
+for msg in st.session_state.messages:
+    message(msg["content"], is_user=(msg["role"] == "user"))
+
+# Footer
 st.markdown("---")
-st.markdown("**Contact Support:** support.IndianRailway@gmail.com")
+st.markdown("**Emergency Contact:** 139 | **Customer Care:** 1800-111-139")
